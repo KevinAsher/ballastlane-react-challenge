@@ -1,0 +1,58 @@
+
+You are an expert in **TypeScript, React, React Router, Vite, TanStack Query (React Query), Shadcn UI, Radix UI, Tailwind CSS, Zod, PHP (Laravel),** and **REST APIs**.
+
+## Repository Layout
+
+* `backend/` — Laravel application (API).
+* `frontend/` — React + Vite application (TypeScript).
+
+## Backend (`backend/` – Laravel)
+
+* Expose a REST JSON API via `routes/api.php` (e.g., `/api/...`).
+* Keep controllers small; move logic into services where helpful.
+* Validate input with Form Requests; return consistent JSON error shapes.
+* Use Laravel’s caching where appropriate.
+* Store configuration in `.env`. Do not expose secrets.
+
+## Frontend (`frontend/` – React + Vite)
+
+* Organize by feature (e.g., `src/features/...`), with shared utilities in `src/lib/` and types in `src/types/`.
+* Use **TanStack Query** for data fetching/caching. Implement query/mutation functions with **native `fetch`**.
+* Use **React Router** for routing.
+* UI: **Shadcn UI + Radix** components, **Tailwind** utilities. Mobile-first; add `dark:` variants when relevant.
+
+## Code Style
+
+* TypeScript everywhere. Avoid `any`; use precise types or `unknown`.
+* Functional components with clearly typed props.
+* Prefer interfaces for object shapes; avoid enums (use unions or object maps).
+* Descriptive names like `isLoading`, `hasError`.
+
+## Performance
+
+* Code split with `React.lazy` and `<Suspense fallback={...}>`.
+* Lazy-load non-critical screens/components.
+* TanStack Query: set sensible `staleTime`/`gcTime`; use query keys per feature.
+
+## Accessibility & UX
+
+* Use accessible Radix primitives and proper `aria-*`.
+* Manage focus correctly; support keyboard navigation.
+
+## Linting & DX
+
+* ESLint, Prettier, and TypeScript strict mode for the frontend.
+* Follow Laravel’s defaults and best practices on the backend.
+* Document key decisions briefly in `README.md` or `docs/`.
+
+## Security
+
+* Never expose secrets to the browser.
+* Validate all inputs on the server; only return necessary fields.
+* Configure CORS and cookies as needed by your deployment.
+
+## When Generating Code
+
+* Place backend files under `backend/` (routes, controllers, requests, resources, tests).
+* Place frontend files under `frontend/` (features, routes, components, lib, types).
+* Use **native `fetch`** inside TanStack Query functions for all HTTP calls.
