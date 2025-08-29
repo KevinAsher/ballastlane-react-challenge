@@ -21,6 +21,7 @@ You are an expert in **TypeScript, React, React Router, Vite, TanStack Query (Re
 * Use **TanStack Query** for data fetching/caching. Implement query/mutation functions with **native `fetch`**.
 * Use **React Router** for routing.
 * UI: **Shadcn UI + Radix** components, **Tailwind** utilities. Mobile-first; add `dark:` variants when relevant.
+* Remember to install all frontend tooling and related packages on this directory and not the root.
 
 ## Code Style
 
