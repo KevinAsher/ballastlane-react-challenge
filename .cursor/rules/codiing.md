@@ -45,11 +45,11 @@ You are an expert in **TypeScript, React, React Router, Vite, TanStack Query (Re
 * Follow Laravel’s defaults and best practices on the backend.
 * Document key decisions briefly in `README.md` or `docs/`.
 
-## Security
+### Developer Experience (DX)
 
-* Never expose secrets to the browser.
-* Validate all inputs on the server; only return necessary fields.
-* Configure CORS and cookies as needed by your deployment.
+- `pnpm dev` should start cleanly with no TypeScript errors.
+- Document key decisions in `README.md` or `docs/`.
+
 
 ## When Generating Code
 
