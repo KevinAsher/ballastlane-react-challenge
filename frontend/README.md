@@ -1,6 +1,66 @@
-# React + TypeScript + Vite
+# Pokemon Challenge Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A React + TypeScript frontend for the Pokemon Challenge application. Built with Vite, TanStack Query, Shadcn UI, and Tailwind CSS.
+
+## Features
+
+- **Authentication**: Session-based login/logout with admin credentials
+- **Pokemon Search**: Search and browse Pokemon with infinite scrolling
+- **Pokemon Details**: View detailed information including stats, abilities, moves, and sprites
+- **Real API Integration**: Connected to Laravel backend API with proper error handling
+- **Responsive Design**: Mobile-first responsive design with dark mode support
+- **Type Safety**: Full TypeScript support with proper typing for PokeAPI data structures
+
+## Getting Started
+
+1. Install dependencies:
+   ```bash
+   pnpm install
+   ```
+
+2. Start the development server:
+   ```bash
+   pnpm dev
+   ```
+
+3. Build for production:
+   ```bash
+   pnpm build
+   ```
+
+## API Integration
+
+The frontend connects to the Laravel backend API running on `http://localhost/api`. The Vite dev server is configured to proxy API requests to the backend.
+
+### Key Components
+
+- **API Client** (`src/lib/api.ts`): Handles all HTTP requests with proper error handling
+- **Auth Context** (`src/features/auth/`): Manages authentication state and session
+- **Pokemon Hooks** (`src/hooks/usePokemon.ts`): TanStack Query hooks for Pokemon data fetching
+- **Type Definitions** (`src/types/`): TypeScript interfaces matching PokeAPI structure
+
+### Authentication
+
+- Login with username: `admin` and password: `admin`
+- Session-based authentication with full CSRF protection via Laravel Sanctum
+- Automatic CSRF cookie fetching and token handling
+- Automatic session validation on app load
+- Secure cookie-based session management
+
+## Architecture
+
+The frontend follows a feature-based architecture:
+
+```
+src/
+├── components/ui/          # Reusable UI components (Shadcn)
+├── features/
+│   ├── auth/              # Authentication components
+│   └── pokemon/           # Pokemon-related components
+├── hooks/                 # Custom React hooks
+├── lib/                   # Utilities and API client
+└── types/                 # TypeScript type definitions
+```
 
 Currently, two official plugins are available:
 

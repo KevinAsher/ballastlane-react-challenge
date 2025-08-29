@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { Button } from '../../components/ui/button';
 import { PokemonSearch } from './PokemonSearch';
