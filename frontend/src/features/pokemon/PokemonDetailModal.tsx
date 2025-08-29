@@ -1,4 +1,4 @@
-import React from 'react';
+
 import {
   Dialog,
   DialogContent,
@@ -43,9 +43,9 @@ function OverviewTab({ pokemon }: { pokemon: PokemonDetail }) {
   return (
     <div className="space-y-4">
       <div className="flex flex-col items-center space-y-4">
-        {pokemon.sprites.official_artwork?.front_default && (
+        {pokemon.sprites.other?.['official-artwork']?.front_default && (
           <img
-            src={pokemon.sprites.official_artwork.front_default}
+            src={pokemon.sprites.other['official-artwork'].front_default}
             alt={pokemon.name}
             className="w-48 h-48 object-contain"
           />
@@ -55,12 +55,12 @@ function OverviewTab({ pokemon }: { pokemon: PokemonDetail }) {
           <p className="text-gray-600">#{pokemon.id.toString().padStart(3, '0')}</p>
         </div>
         <div className="flex gap-2">
-          {pokemon.types.map((type) => (
+          {pokemon.types.map((typeSlot) => (
             <Badge
-              key={type.name}
-              className={`text-white ${typeColors[type.name] || 'bg-gray-400'}`}
+              key={typeSlot.type.name}
+              className={`text-white ${typeColors[typeSlot.type.name] || 'bg-gray-400'}`}
             >
-              {type.name}
+              {typeSlot.type.name}
             </Badge>
           ))}
         </div>
@@ -94,21 +94,21 @@ function OverviewTab({ pokemon }: { pokemon: PokemonDetail }) {
 }
 
 function StatsTab({ pokemon }: { pokemon: PokemonDetail }) {
-  const maxStat = Math.max(...pokemon.stats.map(stat => stat.base_stat));
+  const maxStat = Math.max(...pokemon.stats.map(statSlot => statSlot.base_stat));
   
   return (
     <div className="space-y-4">
-      {pokemon.stats.map((stat) => (
-        <div key={stat.name} className="space-y-2">
+      {pokemon.stats.map((statSlot) => (
+        <div key={statSlot.stat.name} className="space-y-2">
           <div className="flex justify-between">
-            <span className="capitalize font-medium">{stat.name.replace('-', ' ')}</span>
-            <span className="font-bold">{stat.base_stat}</span>
+            <span className="capitalize font-medium">{statSlot.stat.name.replace('-', ' ')}</span>
+            <span className="font-bold">{statSlot.base_stat}</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div
               className="bg-blue-500 h-2 rounded-full transition-all duration-300"
               style={{
-                width: `${(stat.base_stat / maxStat) * 100}%`
+                width: `${(statSlot.base_stat / maxStat) * 100}%`
               }}
             />
           </div>
@@ -121,36 +121,54 @@ function StatsTab({ pokemon }: { pokemon: PokemonDetail }) {
 function AbilitiesTab({ pokemon }: { pokemon: PokemonDetail }) {
   return (
     <div className="space-y-4">
-      {pokemon.abilities.map((ability, index) => (
-        <Card key={index}>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <span className="capitalize">{ability.name.replace('-', ' ')}</span>
-              {ability.is_hidden && (
-                <Badge variant="outline" className="text-xs">Hidden</Badge>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-gray-600">
-              {ability.effect || 'No description available.'}
-            </p>
-          </CardContent>
-        </Card>
-      ))}
+      {pokemon.abilities.map((abilitySlot, index) => {
+        // Get the first English effect if available
+        const englishEffect = abilitySlot.ability.effect_entries?.find(
+          entry => entry.language.name === 'en'
+        )?.effect;
+        
+        return (
+          <Card key={index}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <span className="capitalize">{abilitySlot.ability.name.replace('-', ' ')}</span>
+                {abilitySlot.is_hidden && (
+                  <Badge variant="outline" className="text-xs">Hidden</Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600">
+                {englishEffect || 'No description available.'}
+              </p>
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 }
 
 function MovesTab({ pokemon }: { pokemon: PokemonDetail }) {
-  // Group moves by learn method
-  const movesByMethod = pokemon.moves.reduce((acc, move) => {
-    if (!acc[move.learn_method]) {
-      acc[move.learn_method] = [];
+  // Group moves by learn method and extract details
+  const movesByMethod = pokemon.moves.reduce((acc, moveSlot) => {
+    // Get the latest version group details for this move
+    const versionDetail = moveSlot.version_group_details[0];
+    const method = versionDetail?.move_learn_method.name || 'unknown';
+    
+    if (!acc[method]) {
+      acc[method] = [];
     }
-    acc[move.learn_method].push(move);
+    
+    acc[method].push({
+      name: moveSlot.move.name,
+      url: moveSlot.move.url,
+      learn_method: method,
+      level_learned_at: versionDetail?.level_learned_at,
+    });
+    
     return acc;
-  }, {} as Record<string, typeof pokemon.moves>);
+  }, {} as Record<string, Array<{name: string; url: string; learn_method: string; level_learned_at?: number}>>);
 
   return (
     <ScrollArea className="h-96">
@@ -165,7 +183,7 @@ function MovesTab({ pokemon }: { pokemon: PokemonDetail }) {
                   className="flex justify-between items-center p-2 bg-gray-50 rounded"
                 >
                   <span className="capitalize">{move.name.replace('-', ' ')}</span>
-                  {move.level_learned_at && (
+                  {move.level_learned_at && move.level_learned_at > 0 && (
                     <Badge variant="outline">Lv. {move.level_learned_at}</Badge>
                   )}
                 </div>

@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import type { User } from '../../types';
-import { MockApiService } from '../../lib/mockApi';
+import { apiClient } from '../../lib/api';
 
 interface AuthContextType {
   user: User | null;
@@ -32,7 +32,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const currentUser = await MockApiService.getCurrentUser();
+        // Initialize CSRF protection first
+        await apiClient.getCsrfCookie();
+        const currentUser = await apiClient.getCurrentUser();
         setUser(currentUser);
       } catch (error) {
         setUser(null);
@@ -46,7 +48,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const login = async (username: string, password: string) => {
     try {
-      const response = await MockApiService.login({ username, password });
+      const response = await apiClient.login({ username, password });
       setUser(response.user);
     } catch (error) {
       throw error;
@@ -55,7 +57,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const logout = async () => {
     try {
-      await MockApiService.logout();
+      await apiClient.logout();
       setUser(null);
     } catch (error) {
       console.error('Logout error:', error);
