@@ -17,4 +17,5 @@ Route::middleware(['web', 'auth.session'])->group(function () {
     // Pokemon routes
     Route::get('/pokemon', [PokemonController::class, 'index']);
     Route::get('/pokemon/{identifier}', [PokemonController::class, 'show']);
+    Route::get('/pokemon/{identifier}/enhanced', [PokemonController::class, 'enhanced']);
 });

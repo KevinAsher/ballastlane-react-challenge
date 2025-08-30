@@ -24,13 +24,7 @@ class PokemonController extends Controller
         $page = max(1, (int) $request->input('page', 1));
         $pageSize = min(100, max(1, (int) $request->input('pageSize', 20)));
 
-        // If we have a search query, filter from our cached names
-        if ($query) {
-            return $this->searchPokemon($query, $page, $pageSize);
-        }
-
-        // Otherwise, return all Pokemon from our database or seed from API
-        return $this->listAllPokemon($page, $pageSize);
+        return $this->searchPokemon($query, $page, $pageSize);
     }
 
     /**
@@ -38,16 +32,7 @@ class PokemonController extends Controller
      */
     public function show(string $identifier): JsonResponse
     {
-        // First check if we have it in our database
-        $pokemon = Pokemon::where('name', $identifier)
-            ->orWhere('pokemon_id', $identifier)
-            ->first();
-
-        if ($pokemon) {
-            return response()->json($pokemon->data);
-        }
-
-        // If not in database, fetch from API
+        // Fetch from API to ensure we have the latest data with species information
         $pokemonData = $this->pokeApiService->getPokemon($identifier);
 
         if (! $pokemonData) {
@@ -61,46 +46,35 @@ class PokemonController extends Controller
     }
 
     /**
+     * Get enhanced Pokemon information with additional data.
+     */
+    public function enhanced(string $identifier): JsonResponse
+    {
+        // Fetch enhanced Pokemon data
+        $enhancedPokemonData = $this->pokeApiService->getEnhancedPokemon($identifier);
+
+        if (! $enhancedPokemonData) {
+            return response()->json(['message' => 'Pokemon not found'], 404);
+        }
+
+        // Store base Pokemon in database for future requests
+        $this->pokeApiService->storePokemon($enhancedPokemonData);
+
+        return response()->json($enhancedPokemonData);
+    }
+
+    /**
      * Search Pokemon by name substring.
      */
     private function searchPokemon(string $query, int $page, int $pageSize): JsonResponse
     {
-        $allNames = $this->pokeApiService->getAllPokemonNames();
-
-        // Filter names by substring search
-        $filteredNames = array_filter($allNames, function ($pokemon) use ($query) {
-            return stripos($pokemon['name'], $query) !== false;
-        });
-
-        $total = count($filteredNames);
-        $offset = ($page - 1) * $pageSize;
-        $paginatedNames = array_slice($filteredNames, $offset, $pageSize);
-
-        // Get or fetch details for these Pokemon
-        $items = [];
-        foreach ($paginatedNames as $pokemonName) {
-            $name = $pokemonName['name'];
-
-            // Check if we have it in database
-            $pokemon = Pokemon::where('name', $name)->first();
-
-            if ($pokemon) {
-                $items[] = $pokemon->card_data;
-            } else {
-                // Fetch from API and store
-                $pokemonData = $this->pokeApiService->getPokemon($name);
-                if ($pokemonData) {
-                    $storedPokemon = $this->pokeApiService->storePokemon($pokemonData);
-                    $items[] = $storedPokemon->card_data;
-                }
-            }
-        }
+        $results = $this->pokeApiService->searchPokemon($query, $page, $pageSize);
 
         return response()->json([
-            'items' => $items,
+            'items' => $results['items'],
             'page' => $page,
             'pageSize' => $pageSize,
-            'total' => $total,
+            'total' => $results['total'],
         ]);
     }
 
@@ -147,7 +121,6 @@ class PokemonController extends Controller
 
         // Get first 50 Pokemon for initial seeding
         $allNames = $this->pokeApiService->getAllPokemonNames();
-        $initialPokemon = array_slice($allNames, 0, 50);
 
         foreach ($initialPokemon as $pokemonName) {
             $pokemonData = $this->pokeApiService->getPokemon($pokemonName['name']);

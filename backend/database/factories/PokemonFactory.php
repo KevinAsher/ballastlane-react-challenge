@@ -23,9 +23,6 @@ class PokemonFactory extends Factory
         return [
             'pokemon_id' => $pokemonId,
             'name' => strtolower($name),
-            'slug' => strtolower($name),
-            'types' => $types,
-            'sprite_url' => fake()->imageUrl(96, 96, 'pokemon'),
             'data' => [
                 'id' => $pokemonId,
                 'name' => strtolower($name),
@@ -65,7 +62,6 @@ class PokemonFactory extends Factory
     {
         return $this->state(function (array $attributes) use ($name) {
             $attributes['name'] = $name;
-            $attributes['slug'] = $name;
             $attributes['data']['name'] = $name;
 
             return $attributes;
@@ -91,7 +87,6 @@ class PokemonFactory extends Factory
     public function withTypes(array $types): static
     {
         return $this->state(function (array $attributes) use ($types) {
-            $attributes['types'] = $types;
             $attributes['data']['types'] = collect($types)->map(fn ($type) => ['type' => ['name' => $type]])->toArray();
 
             return $attributes;
@@ -107,9 +102,6 @@ class PokemonFactory extends Factory
             return [
                 'pokemon_id' => 25,
                 'name' => 'pikachu',
-                'slug' => 'pikachu',
-                'types' => ['electric'],
-                'sprite_url' => 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png',
                 'data' => [
                     'id' => 25,
                     'name' => 'pikachu',
@@ -159,9 +151,6 @@ class PokemonFactory extends Factory
             return [
                 'pokemon_id' => 6,
                 'name' => 'charizard',
-                'slug' => 'charizard',
-                'types' => ['fire', 'flying'],
-                'sprite_url' => 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/6.png',
                 'data' => [
                     'id' => 6,
                     'name' => 'charizard',

@@ -14,9 +14,6 @@ class Pokemon extends Model
     protected $fillable = [
         'pokemon_id',
         'name',
-        'slug',
-        'types',
-        'sprite_url',
         'data',
     ];
 
@@ -26,7 +23,6 @@ class Pokemon extends Model
     protected function casts(): array
     {
         return [
-            'types' => 'array',
             'data' => 'array',
             'pokemon_id' => 'integer',
         ];
@@ -38,6 +34,34 @@ class Pokemon extends Model
     public function scopeSearch($query, string $name): void
     {
         $query->where('name', 'LIKE', '%'.$name.'%');
+    }
+
+    /**
+     * Get slug derived from data.
+     */
+    public function getSlugAttribute(): string
+    {
+        return $this->data['name'] ?? $this->name;
+    }
+
+    /**
+     * Get types derived from data.
+     */
+    public function getTypesAttribute(): array
+    {
+        if (! isset($this->data['types'])) {
+            return [];
+        }
+
+        return collect($this->data['types'])->map(fn ($type) => $type['type']['name'])->toArray();
+    }
+
+    /**
+     * Get sprite URL derived from data.
+     */
+    public function getSpriteUrlAttribute(): ?string
+    {
+        return $this->data['sprites']['front_default'] ?? null;
     }
 
     /**

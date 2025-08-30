@@ -6,23 +6,63 @@ use App\Models\Pokemon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Concurrency;
 
 class PokeApiService
 {
     private const BASE_URL = 'https://pokeapi.co/api/v2';
 
     private const CACHE_TTL = 24 * 60 * 60; // 24 hours
+    private const CACHE_POKEMON_INDEX = 'pokemon_index';
+    private const CACHE_POKEMON_DETAILS = 'pokemon_details';
+
+    public function searchPokemon(string $searchQuery, int $page, int $pageSize): array
+    {
+        $this->storePokemonIndex();
+
+
+
+        $query = Pokemon::query();
+
+        if (!empty($searchQuery)) {
+            $query->where('name', 'like', "%{$searchQuery}%");
+        }
+
+        $total = $query->count();
+        $pokemons = $query->select('name')
+            ->orderBy('name', 'asc')
+            ->skip(($page - 1) * $pageSize)
+            ->take($pageSize)
+            ->get();
+
+
+        $tasks = collect();
+        $results = collect();
+        foreach ($pokemons as $pokemon) {
+            if (!Cache::has($this->getCacheKeyForPokemon($pokemon->name))) {
+                $tasks->push(fn() => $this->getStoredPokemon($pokemon->name));
+            } else {
+                $results->push(Cache::get($this->getCacheKeyForPokemon($pokemon->name)));
+            }
+        }
+
+
+        $results->push(...Concurrency::run($tasks->toArray()));
+
+        return [
+            'items' => $results->filter()->sortBy('name')->toArray(),
+            'total' => $total,
+        ];
+    }
 
     /**
      * Get all Pokemon names for indexing.
      */
-    public function getAllPokemonNames(): array
+    public function storePokemonIndex(): array
     {
-        $cacheKey = 'pokemon_names_index';
-
-        return Cache::remember($cacheKey, self::CACHE_TTL, function () {
+        return Cache::remember(self::CACHE_POKEMON_INDEX, self::CACHE_TTL, function () {
             try {
-                $response = Http::timeout(30)->get(self::BASE_URL.'/pokemon', [
+                $response = Http::timeout(30)->get(self::BASE_URL . '/pokemon', [
                     'limit' => 20000,
                     'offset' => 0,
                 ]);
@@ -30,12 +70,12 @@ class PokeApiService
                 if ($response->successful()) {
                     $data = $response->json();
 
-                    return collect($data['results'])->map(function ($pokemon) {
-                        return [
-                            'name' => $pokemon['name'],
-                            'url' => $pokemon['url'],
-                        ];
-                    })->toArray();
+                    // batch insert into database
+                    $pokemonData = collect($data['results'])
+                        ->map(fn($pokemon) => ['name' => $pokemon['name']])
+                        ->toArray();
+
+                    Pokemon::upsert($pokemonData, ['name']);
                 }
 
                 Log::error('Failed to fetch Pokemon names from PokeAPI', [
@@ -57,13 +97,11 @@ class PokeApiService
     /**
      * Get Pokemon details by name or ID.
      */
-    public function getPokemon(string $identifier): ?array
+    public function getStoredPokemon(string $identifier): ?array
     {
-        $cacheKey = "pokemon_detail_{$identifier}";
-
-        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($identifier) {
+        return Cache::remember($this->getCacheKeyForPokemon($identifier), self::CACHE_TTL, function () use ($identifier) {
             try {
-                $response = Http::timeout(30)->get(self::BASE_URL."/pokemon/{$identifier}");
+                $response = Http::timeout(30)->get(self::BASE_URL . "/pokemon/{$identifier}");
 
                 if ($response->successful()) {
                     $data = $response->json();
@@ -71,11 +109,15 @@ class PokeApiService
                     // Optionally expand abilities to include effect text
                     $data = $this->expandAbilities($data);
 
+                    // Fetch and include species data
+                    $data = $this->expandSpeciesData($data);
+
+                    $this->storePokemon($data);
                     return $data;
                 }
 
                 if ($response->status() === 404) {
-                    return null;
+                    return false;
                 }
 
                 Log::error('Failed to fetch Pokemon details from PokeAPI', [
@@ -87,6 +129,36 @@ class PokeApiService
                 return null;
             } catch (\Exception $e) {
                 Log::error('Exception while fetching Pokemon details', [
+                    'identifier' => $identifier,
+                    'message' => $e->getMessage(),
+                ]);
+
+                return null;
+            }
+        });
+    }
+
+    /**
+     * Get enhanced Pokemon details with all additional data.
+     */
+    public function getEnhancedPokemon(string $identifier): ?array
+    {
+        $cacheKey = "enhanced_pokemon_detail_{$identifier}";
+
+        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($identifier) {
+            try {
+                $pokemonData = $this->getPokemon($identifier);
+
+                // Fetch additional data concurrently (for future use)
+                $enhancedData = $this->fetchEnhancedDataConcurrently($pokemonData);
+
+                $enhancedData = $this->transformToEnhancedPokemon($pokemonData, $enhancedData);
+
+                $this->storePokemon($enhancedData);
+
+                return $enhancedData;
+            } catch (\Exception $e) {
+                Log::error('Exception while fetching enhanced Pokemon details', [
                     'identifier' => $identifier,
                     'message' => $e->getMessage(),
                 ]);
@@ -125,7 +197,7 @@ class PokeApiService
      */
     private function getAbilityDetails(string $url): ?array
     {
-        $cacheKey = 'ability_'.md5($url);
+        $cacheKey = 'ability_' . md5($url);
 
         return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($url) {
             try {
@@ -148,22 +220,154 @@ class PokeApiService
     }
 
     /**
+     * Get species details from URL.
+     */
+    private function getSpeciesDetails(string $url): ?array
+    {
+        $cacheKey = 'species_' . md5($url);
+
+        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($url) {
+            try {
+                $response = Http::timeout(10)->get($url);
+
+                if ($response->successful()) {
+                    return $response->json();
+                }
+
+                return null;
+            } catch (\Exception $e) {
+                Log::warning('Failed to fetch species details', [
+                    'url' => $url,
+                    'message' => $e->getMessage(),
+                ]);
+
+                return null;
+            }
+        });
+    }
+
+    /**
+     * Expand species data to include detailed species information.
+     */
+    private function expandSpeciesData(array $pokemonData): array
+    {
+        if (! isset($pokemonData['species']['url'])) {
+            return $pokemonData;
+        }
+
+        $speciesUrl = $pokemonData['species']['url'];
+        $speciesDetails = $this->getSpeciesDetails($speciesUrl);
+
+        if ($speciesDetails) {
+            $pokemonData['species']['data'] = $speciesDetails;
+        }
+
+        return $pokemonData;
+    }
+
+    /**
+     * Fetch enhanced data concurrently for a Pokemon.
+     */
+    private function fetchEnhancedDataConcurrently(array $pokemonData): array
+    {
+        $urls = [];
+
+        // Species data request
+        if (isset($pokemonData['species']['url'])) {
+            $urls['species'] = $pokemonData['species']['url'];
+        }
+
+        // Type damage relations requests
+        $typeUrls = collect($pokemonData['types'])->pluck('type.url')->filter()->toArray();
+        foreach ($typeUrls as $index => $typeUrl) {
+            $urls["type_{$index}"] = $typeUrl;
+        }
+
+        // Location encounters request
+        if (isset($pokemonData['location_area_encounters'])) {
+            $locationUrl = $pokemonData['location_area_encounters'];
+            // Handle both full URLs and relative paths
+            if (! str_starts_with($locationUrl, 'http')) {
+                $locationUrl = rtrim(self::BASE_URL, '/') . '/' . ltrim($locationUrl, '/');
+            }
+            $urls['locations'] = $locationUrl;
+        }
+
+        // Execute concurrent requests
+        $poolRequests = [];
+        foreach ($urls as $key => $url) {
+            $poolRequests[$key] = $url;
+        }
+
+        $responses = Http::pool(fn($pool) => collect($poolRequests)->mapWithKeys(fn($url, $key) => [
+            $key => $pool->as($key)->timeout(10)->retry(2)->get($url),
+        ])->toArray());
+
+        // Process responses with caching
+        $results = [];
+
+        foreach ($responses as $key => $response) {
+            $cacheKey = $this->getCacheKeyForUrl($key, $urls[$key]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                Cache::put($cacheKey, $data, self::CACHE_TTL);
+                $results[$key] = $data;
+            } else {
+                // Try to get from cache if request failed
+                $cached = Cache::get($cacheKey);
+                if ($cached) {
+                    $results[$key] = $cached;
+                } else {
+                    Log::warning("Failed to fetch enhanced data for key: {$key}", [
+                        'status' => $response->status(),
+                        'url' => $urls[$key],
+                    ]);
+                }
+            }
+        }
+
+        return $results;
+    }
+
+    /**
+     * Generate cache key for URL-based data.
+     */
+    private function getCacheKeyForUrl(string $type, string $url): string
+    {
+        return "pokeapi_{$type}_" . md5($url);
+    }
+
+    private function getCacheKeyForPokemon(string $identifier): string
+    {
+        return self::CACHE_POKEMON_DETAILS . ":" . $identifier;
+    }
+
+    /**
+     * Transform base Pokemon data with enhanced data into the enhanced structure.
+     */
+    private function transformToEnhancedPokemon(array $pokemonData, array $enhancedData): array
+    {
+        // Add species data from enhanced data if available
+        if (isset($enhancedData['species'])) {
+            $pokemonData['species']['data'] = $enhancedData['species'];
+        }
+
+        // Since other enhanced fields are commented out in the TypeScript interface,
+        // just return the Pokemon data with species data for now
+        return $pokemonData;
+    }
+
+    /**
      * Store or update Pokemon in database.
      */
-    public function storePokemon(array $pokemonData): Pokemon
+    public function storePokemon(array $pokemonData)
     {
-        $types = collect($pokemonData['types'])->map(fn ($type) => $type['type']['name'])->toArray();
-        $spriteUrl = $pokemonData['sprites']['front_default'] ?? null;
-
-        return Pokemon::updateOrCreate(
-            ['pokemon_id' => $pokemonData['id']],
+        return Pokemon::where('name', $pokemonData['name'])->update(
             [
-                'name' => $pokemonData['name'],
-                'slug' => $pokemonData['name'],
-                'types' => $types,
-                'sprite_url' => $spriteUrl,
+                'pokemon_id' => $pokemonData['id'],
                 'data' => $pokemonData,
-            ]
+            ],
         );
     }
 }
