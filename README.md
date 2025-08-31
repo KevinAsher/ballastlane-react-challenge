@@ -39,6 +39,7 @@
 2. **Start the backend with Laravel Sail**
    ```bash
    cd backend
+   composer install
    ./vendor/bin/sail up -d
    ```
 
