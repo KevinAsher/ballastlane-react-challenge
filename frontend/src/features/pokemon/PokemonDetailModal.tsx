@@ -7,7 +7,6 @@ import {
 } from '../../components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { Badge } from '../../components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { ScrollArea } from '../../components/ui/scroll-area';
 import { 
   usePokemonOverview, 
@@ -15,6 +14,18 @@ import {
   usePokemonMoves, 
   usePokemonForms 
 } from '../../hooks/usePokemon';
+import { 
+  Heart, 
+  Sword, 
+  Zap, 
+  Target, 
+  Sparkles, 
+  Star,
+  Gauge,
+  Trophy,
+  Eye,
+  Wand2
+} from 'lucide-react';
 
 
 interface PokemonDetailModalProps {
@@ -24,33 +35,37 @@ interface PokemonDetailModalProps {
 }
 
 const typeColors: Record<string, string> = {
-  normal: 'bg-gray-400',
-  fire: 'bg-red-500',
-  water: 'bg-blue-500',
-  electric: 'bg-yellow-400',
-  grass: 'bg-green-500',
-  ice: 'bg-blue-200',
-  fighting: 'bg-red-700',
-  poison: 'bg-purple-500',
-  ground: 'bg-yellow-600',
-  flying: 'bg-indigo-400',
-  psychic: 'bg-pink-500',
-  bug: 'bg-green-400',
-  rock: 'bg-yellow-800',
-  ghost: 'bg-purple-700',
-  dragon: 'bg-indigo-700',
-  dark: 'bg-gray-800',
-  steel: 'bg-gray-500',
-  fairy: 'bg-pink-300',
+  normal: "#A8A878",
+  fire: "#F08030",
+  water: "#6890F0",
+  electric: "#F8D030",
+  grass: "#78C850",
+  ice: "#98D8D8",
+  fighting: "#C03028",
+  poison: "#A040A0",
+  ground: "#E0C068",
+  flying: "#A890F0",
+  psychic: "#F85888",
+  bug: "#A8B820",
+  rock: "#B8A038",
+  ghost: "#705898",
+  dragon: "#7038F8",
+  dark: "#705848",
+  steel: "#B8B8D0",
+  fairy: "#EE99AC",
 };
+
+
 
 function OverviewTab({ pokemonName }: { pokemonName: string }) {
   const { data: pokemon, isLoading, error } = usePokemonOverview(pokemonName);
+  const primaryType = pokemon?.types?.[0] || "normal";
+  const primaryColor = typeColors[primaryType] || "#A8A878";
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="text-lg">Loading overview...</div>
+        <div className="text-lg text-white/70">Loading overview...</div>
       </div>
     );
   }
@@ -58,7 +73,7 @@ function OverviewTab({ pokemonName }: { pokemonName: string }) {
   if (error) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="text-red-600">Failed to load overview</div>
+        <div className="text-red-400">Failed to load overview</div>
       </div>
     );
   }
@@ -68,46 +83,93 @@ function OverviewTab({ pokemonName }: { pokemonName: string }) {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col items-center space-y-4">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold capitalize">{pokemon.name}</h2>
-          <p className="text-gray-600">#{pokemon.id.toString().padStart(3, '0')}</p>
+    <div className="space-y-6">
+      {/* Enhanced Pokemon Header */}
+      <div className="relative overflow-hidden rounded-xl p-6" 
+        style={{
+          background: `linear-gradient(135deg, rgba(10,10,10,0.8) 0%, ${primaryColor}20 50%, rgba(10,10,10,0.8) 100%)`,
+          border: `1px solid ${primaryColor}30`
+        }}>
+        <div className="text-center space-y-3">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-black/30 backdrop-blur-sm">
+            <Star className="w-4 h-4 text-yellow-400" />
+            <span className="text-sm font-bold text-white">
+              #{pokemon.id.toString().padStart(3, '0')}
+            </span>
+          </div>
+          <h2 className="text-3xl font-bold capitalize text-white mb-2">{pokemon.name}</h2>
+          <div className="flex justify-center gap-2">
+            {pokemon.types.map((type, index) => (
+              <Badge
+                key={index}
+                className="text-white border-0 shadow-lg px-4 py-2 font-medium text-sm"
+                style={{ backgroundColor: typeColors[type] }}
+              >
+                {type}
+              </Badge>
+            ))}
+          </div>
         </div>
-        <div className="flex gap-2">
-          {pokemon.types.map((type, index) => (
-            <Badge
-              key={index}
-              className={`text-white ${typeColors[type] || 'bg-gray-400'}`}
-            >
-              {type}
-            </Badge>
+        
+        {/* Animated background particles */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {[...Array(6)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-1 h-1 rounded-full animate-ping"
+              style={{
+                backgroundColor: primaryColor,
+                top: `${Math.random() * 100}%`,
+                left: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 2}s`,
+                animationDuration: `${2 + Math.random() * 2}s`,
+                opacity: 0.3,
+              }}
+            />
           ))}
         </div>
       </div>
       
+      {/* Physical Stats Grid */}
       <div className="grid grid-cols-2 gap-4">
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold">{pokemon.height / 10}m</div>
-            <div className="text-sm text-gray-600">Height</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold">{pokemon.weight / 10}kg</div>
-            <div className="text-sm text-gray-600">Weight</div>
-          </CardContent>
-        </Card>
+        <div className="p-4 rounded-lg bg-black/20 backdrop-blur-sm border border-white/10 text-center">
+          <div className="flex items-center justify-center mb-2">
+            <Gauge className="w-6 h-6" style={{ color: primaryColor }} />
+          </div>
+          <div className="text-2xl font-bold text-white mb-1">{pokemon.height / 10}m</div>
+          <div className="text-sm text-white/70">Height</div>
+        </div>
+        
+        <div className="p-4 rounded-lg bg-black/20 backdrop-blur-sm border border-white/10 text-center">
+          <div className="flex items-center justify-center mb-2">
+            <Target className="w-6 h-6" style={{ color: primaryColor }} />
+          </div>
+          <div className="text-2xl font-bold text-white mb-1">{pokemon.weight / 10}kg</div>
+          <div className="text-sm text-white/70">Weight</div>
+        </div>
       </div>
       
+      {/* Base Experience */}
       {pokemon.base_experience && (
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold">{pokemon.base_experience}</div>
-            <div className="text-sm text-gray-600">Base Experience</div>
-          </CardContent>
-        </Card>
+        <div className="p-6 rounded-lg bg-black/20 backdrop-blur-sm border border-white/10 text-center">
+          <div className="flex items-center justify-center mb-3">
+            <Trophy className="w-8 h-8 text-yellow-400" />
+          </div>
+          <div className="text-3xl font-bold text-white mb-2">{pokemon.base_experience}</div>
+          <div className="text-sm text-white/70 uppercase tracking-wider">Base Experience</div>
+          
+          {/* Experience bar visualization */}
+          <div className="mt-4 w-full bg-black/20 rounded-full h-2 overflow-hidden">
+            <div 
+              className="h-full rounded-full transition-all duration-1000 ease-out"
+              style={{ 
+                width: `${Math.min((pokemon.base_experience / 300) * 100, 100)}%`,
+                background: `linear-gradient(90deg, ${primaryColor}80, ${primaryColor})`,
+                boxShadow: `0 0 10px ${primaryColor}60`
+              }}
+            />
+          </div>
+        </div>
       )}
     </div>
   );
@@ -119,15 +181,15 @@ function AbilitiesTab({ pokemonName }: { pokemonName: string }) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="text-lg">Loading abilities...</div>
+        <div className="text-lg text-white/70">Loading abilities...</div>
       </div>
     );
   }
 
- if (error) {
+  if (error) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="text-red-600">Failed to load abilities</div>
+        <div className="text-red-400">Failed to load abilities</div>
       </div>
     );
   }
@@ -139,21 +201,43 @@ function AbilitiesTab({ pokemonName }: { pokemonName: string }) {
   return (
     <div className="space-y-4">
       {abilitiesData.map((ability, index) => (
-        <Card key={index}>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <span className="capitalize">{ability.name.replace('-', ' ')}</span>
-              {ability.is_hidden && (
-                <Badge variant="outline" className="text-xs">Hidden</Badge>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-gray-600">
+        <div 
+          key={index}
+          className="relative overflow-hidden rounded-xl p-6 bg-black/20 backdrop-blur-sm border border-white/10"
+        >
+          {/* Background gradient effect */}
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-blue-500/10 opacity-30" />
+          
+          <div className="relative">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-500/20 border border-blue-500/30">
+                <Wand2 className="w-5 h-5 text-blue-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-bold capitalize text-white">
+                  {ability.name.replace('-', ' ')}
+                </h3>
+                <div className="flex items-center gap-2 mt-1">
+                  {ability.is_hidden && (
+                    <Badge className="bg-purple-500/20 text-purple-300 border border-purple-500/30 text-xs">
+                      <Eye className="w-3 h-3 mr-1" />
+                      Hidden Ability
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            <p className="text-white/80 leading-relaxed">
               {ability.effect || 'No description available.'}
             </p>
-          </CardContent>
-        </Card>
+          </div>
+          
+          {/* Sparkle effect */}
+          <div className="absolute top-2 right-2">
+            <Sparkles className="w-4 h-4 text-blue-400 opacity-70" />
+          </div>
+        </div>
       ))}
     </div>
   );
@@ -179,7 +263,7 @@ function MovesTab({ pokemonName }: { pokemonName: string }) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="text-lg">Loading moves...</div>
+        <div className="text-lg text-white/70">Loading moves...</div>
       </div>
     );
   }
@@ -187,7 +271,7 @@ function MovesTab({ pokemonName }: { pokemonName: string }) {
   if (error) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="text-red-600">Failed to load moves</div>
+        <div className="text-red-400">Failed to load moves</div>
       </div>
     );
   }
@@ -196,45 +280,93 @@ function MovesTab({ pokemonName }: { pokemonName: string }) {
     return null;
   }
 
-
   return (
     <ScrollArea className="h-96">
       <div className="space-y-6">
         {Object.entries(movesByMethod).map(([method, moves]) => (
           <div key={method}>
-            <h3 className="font-semibold mb-2 capitalize">{method.replace('-', ' ')}</h3>
-            <div className="grid grid-cols-1 gap-2">
-              {moves.map((move, index) => (
-                <Card key={index}>
-                  <CardContent className="p-3">
-                    <div className="flex justify-between items-start mb-2">
-                      <span className="capitalize font-medium">{move.name.replace('-', ' ')}</span>
-                      <div className="flex gap-1">
-                        {move.level_learned_at && move.level_learned_at > 0 && (
-                          <Badge variant="outline">Lv. {move.level_learned_at}</Badge>
-                        )}
-                        {move.type && (
-                          <Badge 
-                            className={`text-white text-xs ${typeColors[move.type] || 'bg-gray-400'}`}
-                          >
-                            {move.type}
-                          </Badge>
-                        )}
+            <div className="flex items-center gap-2 mb-4">
+              <Sword className="w-5 h-5 text-orange-400" />
+              <h3 className="text-lg font-bold capitalize text-white">
+                Level Up
+              </h3>
+              <div className="flex-1 h-px bg-gradient-to-r from-orange-400/50 to-transparent" />
+            </div>
+            
+            <div className="grid grid-cols-1 gap-3">
+              {moves.map((move, index) => {
+                const moveTypeColor = typeColors[move.type || 'normal'] || '#A8A878';
+                return (
+                  <div 
+                    key={index}
+                    className="relative overflow-hidden rounded-lg p-4 bg-black/20 backdrop-blur-sm border border-white/10"
+                  >
+                    {/* Type-based background accent */}
+                    <div 
+                      className="absolute left-0 top-0 bottom-0 w-1 opacity-70"
+                      style={{ backgroundColor: moveTypeColor }}
+                    />
+                    
+                    <div className="ml-3">
+                      <div className="flex justify-between items-start mb-3">
+                        <h4 className="capitalize font-semibold text-white text-lg">
+                          {move.name.replace('-', ' ')}
+                        </h4>
+                        <div className="flex gap-2">
+                          {move.level_learned_at && move.level_learned_at > 0 && (
+                            <Badge className="bg-yellow-500/20 text-yellow-300 border border-yellow-500/30 text-xs">
+                              Lv. {move.level_learned_at}
+                            </Badge>
+                          )}
+                          {move.type && (
+                            <Badge 
+                              className="text-white text-xs border-0"
+                              style={{ backgroundColor: moveTypeColor }}
+                            >
+                              {move.type}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
+                      
+                      {(move.power || move.accuracy || move.pp) && (
+                        <div className="flex gap-6 mb-3">
+                          {move.power && (
+                            <div className="flex items-center gap-1">
+                              <Sword className="w-4 h-4 text-red-400" />
+                              <span className="text-sm text-white/80">
+                                Power: <span className="font-semibold text-red-400">{move.power}</span>
+                              </span>
+                            </div>
+                          )}
+                          {move.accuracy && (
+                            <div className="flex items-center gap-1">
+                              <Target className="w-4 h-4 text-blue-400" />
+                              <span className="text-sm text-white/80">
+                                Accuracy: <span className="font-semibold text-blue-400">{move.accuracy}%</span>
+                              </span>
+                            </div>
+                          )}
+                          {move.pp && (
+                            <div className="flex items-center gap-1">
+                              <Zap className="w-4 h-4 text-yellow-400" />
+                              <span className="text-sm text-white/80">
+                                PP: <span className="font-semibold text-yellow-400">{move.pp}</span>
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      {move.description && (
+                        <p className="text-sm text-white/70 leading-relaxed">
+                          {move.description}
+                        </p>
+                      )}
                     </div>
-                    {(move.power || move.accuracy || move.pp) && (
-                      <div className="flex gap-4 text-xs text-gray-600 mb-2">
-                        {move.power && <span>Power: {move.power}</span>}
-                        {move.accuracy && <span>Accuracy: {move.accuracy}%</span>}
-                        {move.pp && <span>PP: {move.pp}</span>}
-                      </div>
-                    )}
-                    {move.description && (
-                      <p className="text-xs text-gray-700">{move.description}</p>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
+                  </div>
+                );
+              })}
             </div>
           </div>
         ))}
@@ -249,7 +381,7 @@ function FormsTab({ pokemonName }: { pokemonName: string }) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="text-lg">Loading forms...</div>
+        <div className="text-lg text-white/70">Loading forms...</div>
       </div>
     );
   }
@@ -257,7 +389,7 @@ function FormsTab({ pokemonName }: { pokemonName: string }) {
   if (error) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="text-red-600">Failed to load forms</div>
+        <div className="text-red-400">Failed to load forms</div>
       </div>
     );
   }
@@ -269,79 +401,174 @@ function FormsTab({ pokemonName }: { pokemonName: string }) {
   return (
     <div className="space-y-4">
       {formsData.map((form, index) => (
-        <Card key={index}>
-          <CardContent className="p-4">
-            <div className="flex justify-between items-start">
-              <div className="space-y-2">
-                <span className="capitalize font-medium">{form.name.replace('-', ' ')}</span>
-                <div className="flex gap-2">
-                  {form.is_default && (
-                    <Badge variant="outline" className="text-xs">Default</Badge>
-                  )}
-                  {form.is_mega && (
-                    <Badge variant="outline" className="text-xs">Mega</Badge>
-                  )}
-                  {form.is_battle_only && (
-                    <Badge variant="outline" className="text-xs">Battle Only</Badge>
-                  )}
-                </div>
+        <div 
+          key={index}
+          className="relative overflow-hidden rounded-xl p-6 bg-black/20 backdrop-blur-sm border border-white/10"
+        >
+          {/* Background gradient effect */}
+          <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 via-cyan-500/10 to-emerald-500/10 opacity-30" />
+          
+          <div className="relative flex justify-between items-start">
+            <div className="flex-1 space-y-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-emerald-400" />
+                <h3 className="text-xl font-bold capitalize text-white">
+                  {form.name.replace('-', ' ')}
+                </h3>
               </div>
-              {form.sprites?.front_default && (
-                <img
-                  src={form.sprites.front_default}
-                  alt={form.name}
-                  className="w-16 h-16 object-contain"
-                  loading="lazy"
-                />
-              )}
+              
+              <div className="flex flex-wrap gap-2">
+                {form.is_default && (
+                  <Badge className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs">
+                    <Star className="w-3 h-3 mr-1" />
+                    Default Form
+                  </Badge>
+                )}
+                {form.is_mega && (
+                  <Badge className="bg-purple-500/20 text-purple-300 border border-purple-500/30 text-xs">
+                    <Zap className="w-3 h-3 mr-1" />
+                    Mega Evolution
+                  </Badge>
+                )}
+                {form.is_battle_only && (
+                  <Badge className="bg-red-500/20 text-red-300 border border-red-500/30 text-xs">
+                    <Sword className="w-3 h-3 mr-1" />
+                    Battle Only
+                  </Badge>
+                )}
+              </div>
             </div>
-          </CardContent>
-        </Card>
+            
+            {form.sprites?.front_default && (
+              <div className="relative ml-4">
+                <div className="w-20 h-20 rounded-full bg-white/5 backdrop-blur-sm border border-white/10 flex items-center justify-center overflow-hidden">
+                  <img
+                    src={form.sprites.front_default}
+                    alt={form.name}
+                    className="w-16 h-16 object-contain"
+                    loading="lazy"
+                  />
+                </div>
+                {/* Glow effect */}
+                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-emerald-400/20 to-cyan-400/20 animate-pulse" />
+              </div>
+            )}
+          </div>
+        </div>
       ))}
     </div>
   );
 }
 
 export function PokemonDetailModal({ pokemonName, isOpen, onClose }: PokemonDetailModalProps) {
+  const { data: pokemon } = usePokemonOverview(pokemonName || '');
+  const primaryType = pokemon?.types?.[0] || "normal";
+  const primaryColor = typeColors[primaryType] || "#A8A878";
+  
   if (!pokemonName) {
     return null;
   }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden">
-        <DialogHeader>
-          <DialogTitle>
-            <span className="capitalize">{pokemonName}</span> Details
-          </DialogTitle>
-        </DialogHeader>
+      <DialogContent 
+        className="max-w-4xl max-h-[90vh] overflow-hidden border-0 p-0"
+        style={{
+          boxShadow: `0 25px 50px -12px ${primaryColor}40, 0 0 0 1px ${primaryColor}30`,
+        }}
+      >
+        {/* Enhanced Modal Header */}
+        <div 
+          className="relative overflow-hidden px-8 py-6 border-b"
+          style={{ 
+            borderColor: `${primaryColor}30`,
+            background: `linear-gradient(135deg, rgba(10,10,10,0.95) 0%, ${primaryColor}15 50%, rgba(10,10,10,0.95) 100%)`
+          }}
+        >
+          {/* Background particles */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            {[...Array(8)].map((_, i) => (
+              <div
+                key={i}
+                className="absolute w-1 h-1 rounded-full animate-ping"
+                style={{
+                  backgroundColor: primaryColor,
+                  top: `${Math.random() * 100}%`,
+                  left: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 2}s`,
+                  animationDuration: `${2 + Math.random() * 3}s`,
+                  opacity: 0.2,
+                }}
+              />
+            ))}
+          </div>
+          
+          <DialogHeader className="relative">
+            <DialogTitle className="text-center">
+              <div className="flex items-center justify-center gap-3">
+                <span className="text-2xl font-bold capitalize text-white">
+                  {pokemonName}
+                </span>
+              </div>
+            </DialogTitle>
+          </DialogHeader>
+        </div>
 
-        <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="abilities">Abilities</TabsTrigger>
-            <TabsTrigger value="moves">Moves</TabsTrigger>
-            <TabsTrigger value="forms">Forms</TabsTrigger>
-          </TabsList>
+        {/* Enhanced Tab System */}
+        <div className="px-8 pb-8">
+          <Tabs defaultValue="overview" className="w-full">
+            <TabsList 
+              className="grid w-full grid-cols-4 bg-black/20 backdrop-blur-sm border border-white/10 rounded-lg p-1 mt-6"
+            >
+              <TabsTrigger 
+                value="overview" 
+                className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-white/70 border-0 transition-all duration-300"
+              >
+                <Heart className="w-4 h-4 mr-2" />
+                Overview
+              </TabsTrigger>
+              <TabsTrigger 
+                value="abilities" 
+                className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-white/70 border-0 transition-all duration-300"
+              >
+                <Wand2 className="w-4 h-4 mr-2" />
+                Abilities
+              </TabsTrigger>
+              <TabsTrigger 
+                value="moves" 
+                className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-white/70 border-0 transition-all duration-300"
+              >
+                <Sword className="w-4 h-4 mr-2" />
+                Moves
+              </TabsTrigger>
+              <TabsTrigger 
+                value="forms" 
+                className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-white/70 border-0 transition-all duration-300"
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                Forms
+              </TabsTrigger>
+            </TabsList>
 
-          <ScrollArea className="h-96 mt-4">
-            <TabsContent value="overview">
-              <OverviewTab pokemonName={pokemonName} />
-            </TabsContent>
+            <ScrollArea className="h-[500px] mt-6">
+              <TabsContent value="overview" className="mt-0">
+                <OverviewTab pokemonName={pokemonName} />
+              </TabsContent>
 
-            <TabsContent value="abilities">
-              <AbilitiesTab pokemonName={pokemonName} />
-            </TabsContent>
+              <TabsContent value="abilities" className="mt-0">
+                <AbilitiesTab pokemonName={pokemonName} />
+              </TabsContent>
 
-            <TabsContent value="moves">
-              <MovesTab pokemonName={pokemonName} />
-            </TabsContent>
+              <TabsContent value="moves" className="mt-0">
+                <MovesTab pokemonName={pokemonName} />
+              </TabsContent>
 
-            <TabsContent value="forms">
-              <FormsTab pokemonName={pokemonName} />
-            </TabsContent>
-          </ScrollArea>
-        </Tabs>
+              <TabsContent value="forms" className="mt-0">
+                <FormsTab pokemonName={pokemonName} />
+              </TabsContent>
+            </ScrollArea>
+          </Tabs>
+        </div>
       </DialogContent>
     </Dialog>
   );
