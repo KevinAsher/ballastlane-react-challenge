@@ -2,7 +2,8 @@ import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { Button } from '../../components/ui/button';
 import { PokemonSearch } from './PokemonSearch';
-import { PokemonCard } from './PokemonCard';
+// import { PokemonCard } from './PokemonCard'; // Commented out - using HolographicCard instead
+import { HolographicCard } from './PokemonHolographicCard';
 import { PokemonDetailModal } from './PokemonDetailModal';
 import { usePokemonSearch } from '../../hooks/usePokemon';
 import { LogOut } from 'lucide-react';
@@ -116,9 +117,17 @@ export function PokemonListPage() {
           </div>
         )}
 
-        {/* Pokemon Grid */}
+        {/* Pokemon Grid - Using HolographicCard instead of PokemonCard */}
         {allPokemon.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-6">
+            {allPokemon.map((pokemon) => (
+              <HolographicCard
+                key={`${pokemon.id}-${pokemon.name}`}
+                pokemon={pokemon}
+                onClick={() => handlePokemonClick(pokemon.name)}
+              />
+            ))}
+            {/* Original PokemonCard implementation - commented out for easy flip back:
             {allPokemon.map((pokemon) => (
               <PokemonCard
                 key={`${pokemon.id}-${pokemon.name}`}
@@ -126,6 +135,7 @@ export function PokemonListPage() {
                 onClick={() => handlePokemonClick(pokemon.name)}
               />
             ))}
+            */}
           </div>
         )}
 

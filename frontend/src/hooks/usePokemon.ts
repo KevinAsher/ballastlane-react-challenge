@@ -30,3 +30,44 @@ export function usePokemonDetail(nameOrId: string | number) {
     enabled: !!nameOrId,
   });
 }
+
+// Pokemon detail tab hooks
+export function usePokemonOverview(nameOrId: string | number) {
+  return useQuery({
+    queryKey: ['pokemon', 'overview', nameOrId],
+    queryFn: () => apiClient.getPokemonOverview(nameOrId),
+    staleTime: 30 * 60 * 1000, // 30 minutes
+    gcTime: 60 * 60 * 1000, // 1 hour
+    enabled: !!nameOrId,
+  });
+}
+
+export function usePokemonAbilities(nameOrId: string | number) {
+  return useQuery({
+    queryKey: ['pokemon', 'abilities', nameOrId],
+    queryFn: () => apiClient.getPokemonAbilities(nameOrId),
+    staleTime: 30 * 60 * 1000, // 30 minutes
+    gcTime: 60 * 60 * 1000, // 1 hour
+    enabled: !!nameOrId,
+  });
+}
+
+export function usePokemonMoves(nameOrId: string | number) {
+  return useQuery({
+    queryKey: ['pokemon', 'moves', nameOrId],
+    queryFn: () => apiClient.getPokemonMoves(nameOrId),
+    staleTime: 30 * 60 * 1000, // 30 minutes
+    gcTime: 60 * 60 * 1000, // 1 hour
+    enabled: !!nameOrId,
+  });
+}
+
+export function usePokemonForms(nameOrId: string | number) {
+  return useQuery({
+    queryKey: ['pokemon', 'forms', nameOrId],
+    queryFn: () => apiClient.getPokemonForms(nameOrId),
+    staleTime: 30 * 60 * 1000, // 30 minutes
+    gcTime: 60 * 60 * 1000, // 1 hour
+    enabled: !!nameOrId,
+  });
+}

@@ -4,7 +4,11 @@ import type {
   AuthResponse, 
   PokemonListResponse, 
   PokemonDetail, 
-  SearchParams 
+  SearchParams,
+  PokemonOverview,
+  PokemonAbilities,
+  PokemonMoves,
+  PokemonForms
 } from '../types';
 
 // API Configuration
@@ -140,6 +144,27 @@ class ApiClient {
 
   async getPokemonDetail(nameOrId: string | number): Promise<PokemonDetail> {
     return this.request<PokemonDetail>(`/pokemon/${nameOrId}`);
+  }
+
+  async getEnhancedPokemon(nameOrId: string | number): Promise<any> {
+    return this.request<any>(`/pokemon/${nameOrId}/enhanced`);
+  }
+
+  // Pokemon detail tab endpoints
+  async getPokemonOverview(nameOrId: string | number): Promise<PokemonOverview> {
+    return this.request<PokemonOverview>(`/pokemon/${nameOrId}/overview`);
+  }
+
+  async getPokemonAbilities(nameOrId: string | number): Promise<PokemonAbilities> {
+    return this.request<PokemonAbilities>(`/pokemon/${nameOrId}/abilities`);
+  }
+
+  async getPokemonMoves(nameOrId: string | number): Promise<PokemonMoves> {
+    return this.request<PokemonMoves>(`/pokemon/${nameOrId}/moves`);
+  }
+
+  async getPokemonForms(nameOrId: string | number): Promise<PokemonForms> {
+    return this.request<PokemonForms>(`/pokemon/${nameOrId}/forms`);
   }
 
   // CSRF endpoint - fetch CSRF cookie from Laravel Sanctum
