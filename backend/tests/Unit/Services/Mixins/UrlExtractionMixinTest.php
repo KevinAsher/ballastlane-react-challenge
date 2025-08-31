@@ -525,4 +525,169 @@ class UrlExtractionMixinTest extends TestCase
         $this->assertArrayHasKey('data', $result['abilities'][0]['ability']);
         $this->assertArrayNotHasKey('data', $result['abilities'][1]['ability']);
     }
+
+    #[\PHPUnit\Framework\Attributes\Test]
+    public function it_can_extract_urls_with_wildcard_at_beginning_of_path(): void
+    {
+        $data = [
+            [
+                'name' => 'bulbasaur',
+                'species' => [
+                    'url' => 'https://api.example.com/species/1',
+                    'name' => 'bulbasaur-species',
+                ],
+            ],
+            [
+                'name' => 'ivysaur',
+                'species' => [
+                    'url' => 'https://api.example.com/species/2',
+                    'name' => 'ivysaur-species',
+                ],
+            ],
+            [
+                'name' => 'venusaur',
+                'species' => [
+                    'url' => 'https://api.example.com/species/3',
+                    'name' => 'venusaur-species',
+                ],
+            ],
+        ];
+
+        $urls = $this->service->testExtractNestedUrls($data, '*.species.url');
+
+        $this->assertEquals([
+            '0.species' => 'https://api.example.com/species/1',
+            '1.species' => 'https://api.example.com/species/2',
+            '2.species' => 'https://api.example.com/species/3',
+        ], $urls);
+    }
+
+    #[\PHPUnit\Framework\Attributes\Test]
+    public function it_can_fetch_and_map_urls_with_wildcard_at_beginning_of_path(): void
+    {
+        // Tests that wildcard paths starting with * generate consistent key names 
+        // and properly map data back to all elements including the first one.
+        $data = [
+            [
+                'name' => 'bulbasaur',
+                'species' => [
+                    'url' => 'https://api.example.com/species/1',
+                    'name' => 'bulbasaur-species',
+                ],
+            ],
+            [
+                'name' => 'ivysaur',
+                'species' => [
+                    'url' => 'https://api.example.com/species/2',
+                    'name' => 'ivysaur-species',
+                ],
+            ],
+        ];
+
+        // Set up mock responses
+        $this->service->setMockResponses([
+            'https://api.example.com/species/1' => [
+                'flavor_text_entries' => [
+                    ['flavor_text' => 'A seed Pokémon'],
+                ],
+                'evolution_chain' => [
+                    'url' => 'https://api.example.com/evolution/1',
+                ],
+            ],
+            'https://api.example.com/species/2' => [
+                'flavor_text_entries' => [
+                    ['flavor_text' => 'A seed Pokémon evolved'],
+                ],
+                'evolution_chain' => [
+                    'url' => 'https://api.example.com/evolution/1',
+                ],
+            ],
+        ]);
+
+        $result = $this->service->fetchAndMapNestedUrls($data, ['*.species.url'], $this->service->getBatchFetcher());
+
+        $expected = [
+            [
+                'name' => 'bulbasaur',
+                'species' => [
+                    'url' => 'https://api.example.com/species/1',
+                    'name' => 'bulbasaur-species',
+                    'data' => [
+                        'flavor_text_entries' => [
+                            ['flavor_text' => 'A seed Pokémon'],
+                        ],
+                        'evolution_chain' => [
+                            'url' => 'https://api.example.com/evolution/1',
+                        ],
+                    ],
+                ],
+            ],
+            [
+                'name' => 'ivysaur',
+                'species' => [
+                    'url' => 'https://api.example.com/species/2',
+                    'name' => 'ivysaur-species',
+                    'data' => [
+                        'flavor_text_entries' => [
+                            ['flavor_text' => 'A seed Pokémon evolved'],
+                        ],
+                        'evolution_chain' => [
+                            'url' => 'https://api.example.com/evolution/1',
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $this->assertEquals($expected, $result);
+    }
+
+    #[\PHPUnit\Framework\Attributes\Test]
+    public function it_handles_empty_array_with_wildcard_at_beginning(): void
+    {
+        $data = [];
+
+        $urls = $this->service->testExtractNestedUrls($data, '*.species.url');
+
+        $this->assertEquals([], $urls);
+    }
+
+    #[\PHPUnit\Framework\Attributes\Test]
+    public function it_handles_mixed_valid_and_invalid_items_with_wildcard_at_beginning(): void
+    {
+        $data = [
+            [
+                'name' => 'bulbasaur',
+                'species' => [
+                    'url' => 'https://api.example.com/species/1',
+                    'name' => 'bulbasaur-species',
+                ],
+            ],
+            [
+                'name' => 'ivysaur',
+                // Missing species object
+            ],
+            [
+                'name' => 'venusaur',
+                'species' => [
+                    'name' => 'venusaur-species',
+                    // Missing url field
+                ],
+            ],
+            [
+                'name' => 'charmander',
+                'species' => [
+                    'url' => 'https://api.example.com/species/4',
+                    'name' => 'charmander-species',
+                ],
+            ],
+        ];
+
+        $urls = $this->service->testExtractNestedUrls($data, '*.species.url');
+
+        $this->assertEquals([
+            '0.species' => 'https://api.example.com/species/1',
+            '3.species' => 'https://api.example.com/species/4',
+        ], $urls);
+    }
 }

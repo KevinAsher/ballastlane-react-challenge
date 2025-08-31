@@ -39,7 +39,7 @@ trait UrlExtractionMixin
         if ($currentKey === '*') {
             // Handle wildcard - iterate through all array elements
             foreach ($data as $index => $item) {
-                $newPath = $currentPath ? "{$currentPath}.{$index}" : (string) $index;
+                $newPath = ($currentPath !== '') ? "{$currentPath}.{$index}" : (string) $index;
 
                 if (empty($remainingPath)) {
                     // This is the final level, extract URL
@@ -59,13 +59,18 @@ trait UrlExtractionMixin
                 return;
             }
 
-            $newPath = $currentPath ? "{$currentPath}.{$currentKey}" : $currentKey;
+            $newPath = ($currentPath !== '') ? "{$currentPath}.{$currentKey}" : $currentKey;
 
             if (empty($remainingPath)) {
                 // This is the final level, extract URL
                 if (is_string($data[$currentKey])) {
-                    // Remove the final '.url' or '.link' etc. from the path to get the container path
-                    $containerPath = $currentPath ?: str_replace('.url', '', $newPath);
+                    // For consistency with wildcard paths, always build the full container path
+                    if ($currentPath !== '') {
+                        $containerPath = $currentPath;
+                    } else {
+                        // Remove the final '.url' or '.link' etc. from the path to get the container path
+                        $containerPath = str_replace('.url', '', $newPath);
+                    }
                     $urls[$containerPath] = $data[$currentKey];
                 }
             } else {

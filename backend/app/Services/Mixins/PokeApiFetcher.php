@@ -12,9 +12,18 @@ trait PokeApiFetcher
 
     private const BASE_URL = 'https://pokeapi.co/api/v2';
 
-    private function getRawPokemonApiData(string $identifier): ?array
+    private function getRawPokemonApiData(string|array $oneOrMoreIdentifiers): ?array
     {
-        return $this->fetchWithCache(self::BASE_URL."/pokemon/{$identifier}");
+        $isSingleIdentifier = ! is_array($oneOrMoreIdentifiers);
+        $identifiers = $isSingleIdentifier ? [$oneOrMoreIdentifiers] : $oneOrMoreIdentifiers;
+
+        $urls = collect($identifiers)->map(fn ($identifier) => self::BASE_URL."/pokemon/{$identifier}")->toArray();
+
+        if ($isSingleIdentifier) {
+            return $this->fetchWithCache($urls[0]);
+        }
+
+        return $this->fetchWithCache($urls);
     }
 
     /**

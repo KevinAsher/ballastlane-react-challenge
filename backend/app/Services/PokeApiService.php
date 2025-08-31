@@ -36,18 +36,19 @@ class PokeApiService
             ->take($pageSize)
             ->get();
 
-        $tasks = collect();
         $results = collect();
-        foreach ($pokemons as $pokemon) {
-            if (! Cache::has($this->getCacheKeyForPokemon($pokemon->name))) {
-                $tasks->push(fn () => $this->getStoredPokemon($pokemon->name));
-            } else {
-                $results->push(Cache::get($this->getCacheKeyForPokemon($pokemon->name)));
-            }
+
+        $data = $this->getRawPokemonApiData($pokemons->pluck('name')->toArray());
+
+        $data = $this->fetchAndMapNestedUrls(
+            $data,
+            ['*.species.url'],
+            fn ($urls) => $this->fetchWithCache($urls)
+        );
+
+        foreach ($data as $pokemon) {
+            $results->push($this->transformBasicData($pokemon));
         }
-
-        $results->push(...Concurrency::driver('process')->run($tasks->toArray()));
-
 
         return [
             'items' => $results->filter()->sortBy('name')->toArray(),
