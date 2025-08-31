@@ -3,11 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Pokemon;
 use App\Services\PokeApiService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 
 class PokemonController extends Controller
 {
@@ -32,15 +30,12 @@ class PokemonController extends Controller
      */
     public function show(string $identifier): JsonResponse
     {
-        // Fetch from API to ensure we have the latest data with species information
-        $pokemonData = $this->pokeApiService->getPokemon($identifier);
+        // Fetch from cache/API
+        $pokemonData = $this->pokeApiService->getStoredPokemon($identifier);
 
         if (! $pokemonData) {
             return response()->json(['message' => 'Pokemon not found'], 404);
         }
-
-        // Store in database for future requests
-        $this->pokeApiService->storePokemon($pokemonData);
 
         return response()->json($pokemonData);
     }
@@ -57,10 +52,63 @@ class PokemonController extends Controller
             return response()->json(['message' => 'Pokemon not found'], 404);
         }
 
-        // Store base Pokemon in database for future requests
-        $this->pokeApiService->storePokemon($enhancedPokemonData);
-
         return response()->json($enhancedPokemonData);
+    }
+
+    /**
+     * Get Pokemon overview data.
+     */
+    public function overview(string $identifier): JsonResponse
+    {
+        $overviewData = $this->pokeApiService->getPokemonOverview($identifier);
+
+        if (! $overviewData) {
+            return response()->json(['message' => 'Pokemon not found'], 404);
+        }
+
+        return response()->json($overviewData);
+    }
+
+    /**
+     * Get Pokemon abilities data.
+     */
+    public function abilities(string $identifier): JsonResponse
+    {
+        $abilitiesData = $this->pokeApiService->getPokemonAbilities($identifier);
+
+        if (! $abilitiesData) {
+            return response()->json(['message' => 'Pokemon not found or error fetching abilities'], 404);
+        }
+
+        return response()->json($abilitiesData);
+    }
+
+    /**
+     * Get Pokemon moves data.
+     */
+    public function moves(string $identifier): JsonResponse
+    {
+        $movesData = $this->pokeApiService->getPokemonMoves($identifier);
+
+        if (! $movesData) {
+            return response()->json(['message' => 'Pokemon not found or error fetching moves'], 404);
+        }
+
+        return response()->json($movesData);
+    }
+
+    /**
+     * Get Pokemon forms data.
+     */
+    public function forms(string $identifier): JsonResponse
+    {
+        $formsData = $this->pokeApiService->getPokemonForms($identifier);
+
+        if (! $formsData) {
+            return response()->json(['message' => 'Pokemon not found'], 404);
+        }
+
+        return response()->json($formsData);
     }
 
     /**
@@ -76,59 +124,5 @@ class PokemonController extends Controller
             'pageSize' => $pageSize,
             'total' => $results['total'],
         ]);
-    }
-
-    /**
-     * List all Pokemon with pagination.
-     */
-    private function listAllPokemon(int $page, int $pageSize): JsonResponse
-    {
-        // Check if we need to seed our database
-        $pokemonCount = Pokemon::count();
-
-        if ($pokemonCount === 0) {
-            // We need to seed some Pokemon for the initial load
-            $this->seedInitialPokemon();
-        }
-
-        $query = Pokemon::query();
-        $total = $query->count();
-
-        $pokemon = $query->offset(($page - 1) * $pageSize)
-            ->limit($pageSize)
-            ->get();
-
-        $items = $pokemon->map(fn ($p) => $p->card_data)->toArray();
-
-        return response()->json([
-            'items' => $items,
-            'page' => $page,
-            'pageSize' => $pageSize,
-            'total' => $total,
-        ]);
-    }
-
-    /**
-     * Seed initial Pokemon for the database.
-     */
-    private function seedInitialPokemon(): void
-    {
-        $cacheKey = 'initial_pokemon_seeded';
-
-        if (Cache::get($cacheKey)) {
-            return;
-        }
-
-        // Get first 50 Pokemon for initial seeding
-        $allNames = $this->pokeApiService->getAllPokemonNames();
-
-        foreach ($initialPokemon as $pokemonName) {
-            $pokemonData = $this->pokeApiService->getPokemon($pokemonName['name']);
-            if ($pokemonData) {
-                $this->pokeApiService->storePokemon($pokemonData);
-            }
-        }
-
-        Cache::put($cacheKey, true, 3600); // Cache for 1 hour
     }
 }

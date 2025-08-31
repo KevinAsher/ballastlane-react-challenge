@@ -49,7 +49,6 @@ The backend serves as a proxy layer between the React frontend and the PokeAPI, 
 ## Database Schema
 
 ### Pokemon Table
-- `pokemon_id` - PokeAPI Pokemon ID
 - `name` - Pokemon name
 - `slug` - URL-friendly name
 - `types` - JSON array of type names
@@ -132,7 +131,7 @@ The backend uses Laravel's built-in CORS functionality configured in `config/cor
 - Laravel's built-in cache system with file driver
 
 ### Database
-- Indexes on `pokemon_id`, `name` for fast lookups
+- Indexes on `name` for fast lookups
 - JSON columns for flexible data storage
 - Efficient search queries with LIKE operations
 

@@ -2,15 +2,16 @@
 
 namespace Tests\Feature\Api;
 
-use App\Models\Pokemon;
+use App\Services\PokeApiService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class PokemonTest extends TestCase
 {
     use RefreshDatabase;
+
+    private PokeApiService $mockService;
 
     protected function setUp(): void
     {
@@ -21,6 +22,9 @@ class PokemonTest extends TestCase
 
         // Authenticate for all tests
         $this->authenticate();
+
+        // Set up mock service that will be used by most tests
+        $this->setupMockService();
     }
 
     private function authenticate(): void
@@ -31,22 +35,77 @@ class PokemonTest extends TestCase
         ]);
     }
 
+    private function setupMockService(): void
+    {
+        $this->mockService = $this->createMock(PokeApiService::class);
+        $this->app->instance(PokeApiService::class, $this->mockService);
+    }
+
+    private function createPokemonData(int $id, string $name, array $types = ['normal'], array $extraData = []): array
+    {
+        $baseData = [
+            'id' => $id,
+            'name' => $name,
+            'types' => collect($types)->map(fn ($type) => ['type' => ['name' => $type]])->toArray(),
+            'sprites' => ['front_default' => "http://example.com/{$name}.png"],
+        ];
+
+        return array_merge($baseData, $extraData);
+    }
+
+    private function createSearchResponse(array $items, int $total): array
+    {
+        return [
+            'items' => array_values($items),
+            'total' => $total,
+        ];
+    }
+
+    private function createPokemonRange(int $start, int $end, string $namePrefix = 'pokemon'): array
+    {
+        return collect(range($start, $end))->map(fn ($i) => $this->createPokemonData(
+            $i,
+            "{$namePrefix}{$i}",
+            ['normal']
+        ))->toArray();
+    }
+
+    private function assertPaginatedResponse($response, int $page, int $pageSize, int $total, ?int $expectedItems = null): void
+    {
+        $response->assertStatus(200)
+            ->assertJson([
+                'page' => $page,
+                'pageSize' => $pageSize,
+                'total' => $total,
+            ]);
+
+        if ($expectedItems !== null) {
+            $data = $response->json();
+            $this->assertCount($expectedItems, $data['items']);
+        }
+    }
+
+    private function getPikachuData(): array
+    {
+        return $this->createPokemonData(25, 'pikachu', ['electric'], [
+            'abilities' => [
+                ['ability' => ['name' => 'static'], 'is_hidden' => false],
+            ],
+            'stats' => [
+                ['base_stat' => 35, 'stat' => ['name' => 'hp']],
+            ],
+        ]);
+    }
+
     public function test_pokemon_index_returns_paginated_results(): void
     {
-        // Create some test Pokemon
-        Pokemon::factory()->create([
-            'pokemon_id' => 1,
-            'name' => 'bulbasaur',
-            'types' => ['grass', 'poison'],
-            'sprite_url' => 'http://example.com/bulbasaur.png',
-        ]);
+        $bulbasaur = $this->createPokemonData(1, 'bulbasaur', ['grass', 'poison']);
+        $charmander = $this->createPokemonData(4, 'charmander', ['fire']);
 
-        Pokemon::factory()->create([
-            'pokemon_id' => 4,
-            'name' => 'charmander',
-            'types' => ['fire'],
-            'sprite_url' => 'http://example.com/charmander.png',
-        ]);
+        $this->mockService->expects($this->once())
+            ->method('searchPokemon')
+            ->with('', 1, 20)
+            ->willReturn($this->createSearchResponse([$bulbasaur, $charmander], 2));
 
         $response = $this->getJson('/api/pokemon');
 
@@ -57,106 +116,53 @@ class PokemonTest extends TestCase
                         'id',
                         'name',
                         'types',
-                        'sprite',
+                        'sprites',
                     ],
                 ],
                 'page',
                 'pageSize',
                 'total',
-            ])
-            ->assertJson([
-                'page' => 1,
-                'pageSize' => 20,
-                'total' => 2,
             ]);
 
-        $data = $response->json();
-        $this->assertCount(2, $data['items']);
+        $this->assertPaginatedResponse($response, 1, 20, 2, 2);
     }
 
     public function test_pokemon_index_with_pagination_parameters(): void
     {
-        // Create 25 test Pokemon
-        for ($i = 1; $i <= 25; $i++) {
-            Pokemon::factory()->create([
-                'pokemon_id' => $i,
-                'name' => "pokemon{$i}",
-                'types' => ['normal'],
+        $page1Items = $this->createPokemonRange(1, 10);
+        $page2Items = $this->createPokemonRange(11, 20);
+        $page3Items = $this->createPokemonRange(21, 25);
+
+        $this->mockService->method('searchPokemon')
+            ->willReturnMap([
+                ['', 1, 10, $this->createSearchResponse($page1Items, 25)],
+                ['', 2, 10, $this->createSearchResponse($page2Items, 25)],
+                ['', 3, 10, $this->createSearchResponse($page3Items, 25)],
             ]);
-        }
 
         // Test page 1 with pageSize 10
         $response = $this->getJson('/api/pokemon?page=1&pageSize=10');
-
-        $response->assertStatus(200)
-            ->assertJson([
-                'page' => 1,
-                'pageSize' => 10,
-                'total' => 25,
-            ]);
-
-        $data = $response->json();
-        $this->assertCount(10, $data['items']);
+        $this->assertPaginatedResponse($response, 1, 10, 25, 10);
 
         // Test page 2
         $response = $this->getJson('/api/pokemon?page=2&pageSize=10');
-
-        $response->assertStatus(200)
-            ->assertJson([
-                'page' => 2,
-                'pageSize' => 10,
-                'total' => 25,
-            ]);
-
-        $data = $response->json();
-        $this->assertCount(10, $data['items']);
+        $this->assertPaginatedResponse($response, 2, 10, 25, 10);
 
         // Test page 3 (should have 5 items)
         $response = $this->getJson('/api/pokemon?page=3&pageSize=10');
-
-        $response->assertStatus(200)
-            ->assertJson([
-                'page' => 3,
-                'pageSize' => 10,
-                'total' => 25,
-            ]);
-
-        $data = $response->json();
-        $this->assertCount(5, $data['items']);
+        $this->assertPaginatedResponse($response, 3, 10, 25, 5);
     }
 
     public function test_pokemon_search_by_name(): void
     {
-        Pokemon::factory()->create([
-            'pokemon_id' => 25,
-            'name' => 'pikachu',
-            'types' => ['electric'],
-        ]);
+        $pikachu = $this->createPokemonData(25, 'pikachu', ['electric']);
+        $raichu = $this->createPokemonData(26, 'raichu', ['electric']);
 
-        Pokemon::factory()->create([
-            'pokemon_id' => 26,
-            'name' => 'raichu',
-            'types' => ['electric'],
-        ]);
+        $this->mockService->expects($this->once())
+            ->method('searchPokemon')
+            ->with('chu', 1, 20)
+            ->willReturn($this->createSearchResponse([$pikachu, $raichu], 2));
 
-        Pokemon::factory()->create([
-            'pokemon_id' => 1,
-            'name' => 'bulbasaur',
-            'types' => ['grass', 'poison'],
-        ]);
-
-        // Mock the PokeAPI service to return names
-        Http::fake([
-            'https://pokeapi.co/api/v2/pokemon?limit=20000&offset=0' => Http::response([
-                'results' => [
-                    ['name' => 'pikachu', 'url' => 'https://pokeapi.co/api/v2/pokemon/25/'],
-                    ['name' => 'raichu', 'url' => 'https://pokeapi.co/api/v2/pokemon/26/'],
-                    ['name' => 'bulbasaur', 'url' => 'https://pokeapi.co/api/v2/pokemon/1/'],
-                ],
-            ]),
-        ]);
-
-        // Search for "chu" should return pikachu and raichu
         $response = $this->getJson('/api/pokemon?name=chu');
 
         $response->assertStatus(200);
@@ -170,21 +176,13 @@ class PokemonTest extends TestCase
 
     public function test_pokemon_search_case_insensitive(): void
     {
-        Http::fake([
-            'https://pokeapi.co/api/v2/pokemon?limit=20000&offset=0' => Http::response([
-                'results' => [
-                    ['name' => 'pikachu', 'url' => 'https://pokeapi.co/api/v2/pokemon/25/'],
-                ],
-            ]),
-        ]);
+        $pikachu = $this->createPokemonData(25, 'pikachu', ['electric']);
 
-        Pokemon::factory()->create([
-            'pokemon_id' => 25,
-            'name' => 'pikachu',
-            'types' => ['electric'],
-        ]);
+        $this->mockService->expects($this->once())
+            ->method('searchPokemon')
+            ->with('PIKA', 1, 20)
+            ->willReturn($this->createSearchResponse([$pikachu], 1));
 
-        // Search should be case insensitive
         $response = $this->getJson('/api/pokemon?name=PIKA');
 
         $response->assertStatus(200);
@@ -196,23 +194,12 @@ class PokemonTest extends TestCase
 
     public function test_pokemon_show_existing_pokemon(): void
     {
-        $pokemon = Pokemon::factory()->create([
-            'pokemon_id' => 25,
-            'name' => 'pikachu',
-            'types' => ['electric'],
-            'data' => [
-                'id' => 25,
-                'name' => 'pikachu',
-                'types' => [['type' => ['name' => 'electric']]],
-                'abilities' => [
-                    ['ability' => ['name' => 'static'], 'is_hidden' => false],
-                ],
-                'stats' => [
-                    ['base_stat' => 35, 'stat' => ['name' => 'hp']],
-                ],
-                'sprites' => ['front_default' => 'http://example.com/pikachu.png'],
-            ],
-        ]);
+        $pikachuData = $this->getPikachuData();
+
+        $this->mockService->expects($this->once())
+            ->method('getStoredPokemon')
+            ->with('pikachu')
+            ->willReturn($pikachuData);
 
         $response = $this->getJson('/api/pokemon/pikachu');
 
@@ -226,56 +213,28 @@ class PokemonTest extends TestCase
 
     public function test_pokemon_show_by_id(): void
     {
-        $pokemon = Pokemon::factory()->create([
-            'pokemon_id' => 25,
-            'name' => 'pikachu',
-            'data' => [
-                'id' => 25,
-                'name' => 'pikachu',
-            ],
-        ]);
+        $basicPikachu = ['id' => 25, 'name' => 'pikachu'];
+
+        $this->mockService->expects($this->once())
+            ->method('getStoredPokemon')
+            ->with('25')
+            ->willReturn($basicPikachu);
 
         $response = $this->getJson('/api/pokemon/25');
 
         $response->assertStatus(200)
-            ->assertJson([
-                'id' => 25,
-                'name' => 'pikachu',
-            ]);
+            ->assertJson($basicPikachu);
     }
 
     public function test_pokemon_show_fetches_from_api_when_not_cached(): void
     {
-        // Mock the PokeAPI response
-        Http::fake([
-            'https://pokeapi.co/api/v2/pokemon/pikachu' => Http::response([
-                'id' => 25,
-                'name' => 'pikachu',
-                'types' => [['type' => ['name' => 'electric']]],
-                'abilities' => [
-                    [
-                        'ability' => [
-                            'name' => 'static',
-                            'url' => 'https://pokeapi.co/api/v2/ability/9/',
-                        ],
-                        'is_hidden' => false,
-                    ],
-                ],
-                'sprites' => ['front_default' => 'http://example.com/pikachu.png'],
-                'stats' => [
-                    ['base_stat' => 35, 'stat' => ['name' => 'hp']],
-                ],
-            ]),
-            'https://pokeapi.co/api/v2/ability/9/' => Http::response([
-                'name' => 'static',
-                'effect_entries' => [
-                    [
-                        'effect' => 'Has a 30% chance of paralyzing attacking Pokémon on contact.',
-                        'language' => ['name' => 'en'],
-                    ],
-                ],
-            ]),
-        ]);
+        $pikachuData = $this->getPikachuData();
+        $pikachuData['abilities'][0]['ability']['url'] = 'https://pokeapi.co/api/v2/ability/9/';
+
+        $this->mockService->expects($this->once())
+            ->method('getStoredPokemon')
+            ->with('pikachu')
+            ->willReturn($pikachuData);
 
         $response = $this->getJson('/api/pokemon/pikachu');
 
@@ -284,31 +243,26 @@ class PokemonTest extends TestCase
                 'id' => 25,
                 'name' => 'pikachu',
             ]);
-
-        // Verify Pokemon was stored in database
-        $this->assertDatabaseHas('pokemon', [
-            'pokemon_id' => 25,
-            'name' => 'pikachu',
-        ]);
     }
 
     public function test_pokemon_show_not_found(): void
     {
-        // Mock 404 response from PokeAPI
-        Http::fake([
-            'https://pokeapi.co/api/v2/pokemon/nonexistent' => Http::response(null, 404),
-        ]);
+        $this->mockService->expects($this->once())
+            ->method('getStoredPokemon')
+            ->with('nonexistent')
+            ->willReturn(null);
 
         $response = $this->getJson('/api/pokemon/nonexistent');
 
         $response->assertStatus(404)
-            ->assertJson([
-                'message' => 'Pokemon not found',
-            ]);
+            ->assertJson(['message' => 'Pokemon not found']);
     }
 
     public function test_pokemon_index_pagination_limits(): void
     {
+        $this->mockService->method('searchPokemon')
+            ->willReturn($this->createSearchResponse([], 0));
+
         // Test pageSize limits
         $response = $this->getJson('/api/pokemon?pageSize=1000');
         $data = $response->json();
@@ -326,8 +280,14 @@ class PokemonTest extends TestCase
 
     public function test_pokemon_requires_authentication(): void
     {
-        // Start fresh session without authentication
+        $this->mockService->method('searchPokemon')
+            ->willReturn($this->createSearchResponse([], 0));
+        $this->mockService->method('getStoredPokemon')
+            ->willReturn(null);
+
+        // Start fresh session and explicitly remove authentication
         $this->startSession();
+        session()->forget('authenticated');
 
         $response = $this->getJson('/api/pokemon');
         $response->assertStatus(401);
@@ -338,12 +298,12 @@ class PokemonTest extends TestCase
 
     public function test_pokemon_data_structure(): void
     {
-        Pokemon::factory()->create([
-            'pokemon_id' => 25,
-            'name' => 'pikachu',
-            'types' => ['electric'],
-            'sprite_url' => 'http://example.com/pikachu.png',
-        ]);
+        $pikachu = $this->createPokemonData(25, 'pikachu', ['electric']);
+
+        $this->mockService->expects($this->once())
+            ->method('searchPokemon')
+            ->with('', 1, 20)
+            ->willReturn($this->createSearchResponse([$pikachu], 1));
 
         $response = $this->getJson('/api/pokemon');
 
@@ -354,7 +314,7 @@ class PokemonTest extends TestCase
                         'id',
                         'name',
                         'types',
-                        'sprite',
+                        'sprites',
                     ],
                 ],
                 'page',
@@ -366,29 +326,15 @@ class PokemonTest extends TestCase
         $this->assertIsInt($item['id']);
         $this->assertIsString($item['name']);
         $this->assertIsArray($item['types']);
-        $this->assertIsString($item['sprite']);
-    }
-
-    public function test_empty_search_returns_all_pokemon(): void
-    {
-        Pokemon::factory()->count(3)->create();
-
-        $response = $this->getJson('/api/pokemon?name=');
-
-        $response->assertStatus(200);
-        $data = $response->json();
-        $this->assertEquals(3, $data['total']);
+        $this->assertIsArray($item['sprites']);
     }
 
     public function test_pokemon_search_with_no_results(): void
     {
-        Http::fake([
-            'https://pokeapi.co/api/v2/pokemon?limit=20000&offset=0' => Http::response([
-                'results' => [
-                    ['name' => 'pikachu', 'url' => 'https://pokeapi.co/api/v2/pokemon/25/'],
-                ],
-            ]),
-        ]);
+        $this->mockService->expects($this->once())
+            ->method('searchPokemon')
+            ->with('nonexistentpokemon', 1, 20)
+            ->willReturn($this->createSearchResponse([], 0));
 
         $response = $this->getJson('/api/pokemon?name=nonexistentpokemon');
 

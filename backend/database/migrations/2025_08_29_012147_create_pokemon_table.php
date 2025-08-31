@@ -13,13 +13,7 @@ return new class extends Migration
     {
         Schema::create('pokemon', function (Blueprint $table) {
             $table->id();
-            $table->integer('pokemon_id')->unique()->nullable(); // PokeAPI pokemon ID
             $table->string('name')->unique();
-            $table->json('data')->nullable(); // Full PokeAPI response for caching
-            $table->timestamps();
-
-            $table->index(['name']);
-            $table->index(['pokemon_id']);
         });
     }
 
