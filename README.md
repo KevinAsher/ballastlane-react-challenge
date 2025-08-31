@@ -1,5 +1,7 @@
 # Pokédex Application
 
+<img width="1325" height="925" alt="image" src="https://github.com/user-attachments/assets/31f620a9-e7df-464d-a2d4-b8a9b373ad9e" />
+
 ## 📑 Table of Contents
 
 1. [🚀 Getting Started](#-getting-started)
