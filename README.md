@@ -1,5 +1,74 @@
 # Pokédex Application
 
+## 📑 Table of Contents
+
+1. [🚀 Getting Started](#-getting-started)
+2. [🏗️ Architecture Overview](#️-architecture-overview)
+3. [🔧 Backend (Laravel API)](#-backend-laravel-api)
+   - [📡 API Endpoints](#-api-endpoints)
+   - [🚀 PokéAPI Integration & Batching](#-pokéapi-integration--batching)
+   - [🎯 Key Backend Features](#-key-backend-features)
+4. [🎨 Frontend (React SPA)](#-frontend-react-spa)
+   - [🏛️ Client-Side Rendering (CSR) Architecture](#️-client-side-rendering-csr-architecture)
+   - [📚 Tech Stack](#-tech-stack)
+   - [🏗️ Frontend Architecture](#️-frontend-architecture)
+   - [🔄 Data Flow Architecture](#-data-flow-architecture)
+   - [🎯 Key Frontend Features](#-key-frontend-features)
+   - [🎨 UI/UX Features](#-uiux-features)
+5. [🔄 End-to-End Data Flow](#-end-to-end-data-flow)
+6. [🚀 Performance Optimizations](#-performance-optimizations)
+7. [🧪 Testing Strategy](#-testing-strategy)
+8. [🎯 Key Technical Decisions](#-key-technical-decisions)
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Docker and Docker Compose
+- Node.js and pnpm (for frontend development)
+
+### Local Development Setup
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd ballastlane-react-challenge
+   ```
+
+2. **Start the backend with Laravel Sail**
+   ```bash
+   cd backend
+   ./vendor/bin/sail up -d
+   ```
+
+3. **Set up the database**
+   ```bash
+   # Run migrations to create database tables
+   ./vendor/bin/sail artisan migrate
+   
+   # Seed the database with admin user
+   ./vendor/bin/sail artisan db:seed
+   ```
+
+4. **Build and serve the frontend**
+   ```bash
+   cd frontend
+   pnpm install
+   pnpm build
+   ```
+
+5. **Access the application**
+   - Open your browser and navigate to `http://localhost`
+   - Login with credentials: `admin` / `admin`
+
+### Development Commands
+- **Backend**: `./vendor/bin/sail up -d` (starts Laravel with Docker)
+- **Frontend Dev**: `pnpm run dev` (for development with hot reload)
+- **Frontend Build**: `pnpm run build` (builds production assets)
+- **Tests**: `./vendor/bin/sail phpunit` (backend) and `pnpm run test:e2e` (frontend)
+
+---
 
 ## 🏗️ Architecture Overview
 
