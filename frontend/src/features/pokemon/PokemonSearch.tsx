@@ -38,6 +38,7 @@ export function PokemonSearch({ onSearch }: PokemonSearchProps) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="pl-10 pr-12"
+          data-testid="search-input"
         />
         {query && (
           <Button
@@ -46,10 +47,12 @@ export function PokemonSearch({ onSearch }: PokemonSearchProps) {
             size="sm"
             className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
             onClick={handleClear}
+            data-testid="clear-button"
           >
             <X className="h-4 w-4" />
           </Button>
         )}
+
       </div>
     </form>
   );

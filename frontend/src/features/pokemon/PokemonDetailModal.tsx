@@ -447,6 +447,7 @@ function FormsTab({ pokemonName }: { pokemonName: string }) {
                     alt={form.name}
                     className="w-16 h-16 object-contain"
                     loading="lazy"
+                    data-testid="pokemon-image"
                   />
                 </div>
                 {/* Glow effect */}
@@ -476,6 +477,7 @@ export function PokemonDetailModal({ pokemonName, isOpen, onClose }: PokemonDeta
         style={{
           boxShadow: `0 25px 50px -12px ${primaryColor}40, 0 0 0 1px ${primaryColor}30`,
         }}
+        data-testid="pokemon-detail-modal"
       >
         {/* Enhanced Modal Header */}
         <div 
@@ -506,7 +508,7 @@ export function PokemonDetailModal({ pokemonName, isOpen, onClose }: PokemonDeta
           <DialogHeader className="relative">
             <DialogTitle className="text-center">
               <div className="flex items-center justify-center gap-3">
-                <span className="text-2xl font-bold capitalize text-white">
+                <span className="text-2xl font-bold capitalize text-white" data-testid="pokemon-name">
                   {pokemonName}
                 </span>
               </div>

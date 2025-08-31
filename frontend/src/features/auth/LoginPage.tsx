@@ -66,6 +66,7 @@ export function LoginPage() {
                   disabled={isSubmitting}
                   required
                   className="transition-all duration-200"
+                  data-testid="username-input"
                 />
               </div>
               
@@ -83,12 +84,13 @@ export function LoginPage() {
                   disabled={isSubmitting}
                   required
                   className="transition-all duration-200"
+                  data-testid="password-input"
                 />
               </div>
             </div>
 
             {error && (
-              <div className="p-3 text-sm bg-destructive/10 text-destructive rounded-md border border-destructive/20">
+              <div className="p-3 text-sm bg-destructive/10 text-destructive rounded-md border border-destructive/20" data-testid="error-message">
                 {error}
               </div>
             )}
@@ -98,6 +100,7 @@ export function LoginPage() {
               disabled={isSubmitting}
               className="w-full"
               size="lg"
+              data-testid="login-button"
             >
               {isSubmitting ? 'Signing in...' : 'Sign in'}
             </Button>

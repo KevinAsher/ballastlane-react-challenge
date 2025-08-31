@@ -68,6 +68,8 @@ export function VirtualizedPokemonGrid({
                   key={`${pokemonItem.id}-${pokemonItem.name}`}
                   pokemon={pokemonItem}
                   onClick={() => onPokemonClick(pokemonItem.name)}
+                  data-testid="pokemon-card"
+                  data-pokemon={pokemonItem.name}
                 />
               );
             }
@@ -87,7 +89,7 @@ export function VirtualizedPokemonGrid({
   // Show initial loading state
   if (isLoading && pokemon.length === 0) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-6" data-testid="loading">
         {Array.from({ length: 20 }).map((_, index) => (
           <HolographicCardSkeleton key={index} />
         ))}
@@ -96,12 +98,14 @@ export function VirtualizedPokemonGrid({
   }
 
   return (
-    <Virtuoso
-      useWindowScroll
-      totalCount={rows.length}
-      itemContent={itemContent}
-      endReached={endReached}
-      overscan={8}
-    />
+    <div data-testid="pokemon-grid">
+      <Virtuoso
+        useWindowScroll
+        totalCount={rows.length}
+        itemContent={itemContent}
+        endReached={endReached}
+        overscan={8}
+      />
+    </div>
   );
 }

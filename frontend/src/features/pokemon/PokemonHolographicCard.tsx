@@ -6,7 +6,7 @@ import type { Pokemon } from "@/types/pokemon"
 import { typeColors } from "./utils"
 
 
-export function HolographicCard({ pokemon, onClick }: HolographicCardProps) {
+export function HolographicCard({ pokemon, onClick, ...props }: HolographicCardProps) {
 	const [isHovered, setIsHovered] = useState(false)
 	const primaryType = pokemon.types?.[0] || "normal"
 	const primaryColor = typeColors[primaryType] || "#A8A878"
@@ -28,6 +28,7 @@ export function HolographicCard({ pokemon, onClick }: HolographicCardProps) {
 			onClick={onClick}
 			onMouseEnter={() => setIsHovered(true)}
 			onMouseLeave={() => setIsHovered(false)}
+			{...props}
 		>
 			{/* Quantum Effects */}
 			<QuantumField primaryColor={primaryColor} />
@@ -208,6 +209,8 @@ function StatsGrid({ stats, primaryColor }: StatsGridProps) {
 interface HolographicCardProps {
 	pokemon: Pokemon
 	onClick: () => void
+	'data-testid'?: string
+	'data-pokemon'?: string
 }
 
 interface CardBadgesProps {

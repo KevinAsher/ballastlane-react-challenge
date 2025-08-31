@@ -57,10 +57,10 @@ export function PokemonListPage() {
       <header className="bg-card shadow-sm border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-foreground">Pokédex</h1>
+            <h1 className="text-2xl font-bold text-foreground" data-testid="pokemon-header">Pokédex</h1>
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-muted-foreground">Welcome, {user?.username}</span>
-              <Button variant="outline" size="sm" onClick={handleLogout}>
+              <span className="text-sm text-muted-foreground" data-testid="welcome-message">Welcome, {user?.username}</span>
+              <Button variant="outline" size="sm" onClick={handleLogout} data-testid="logout-button">
                 <LogOut className="h-4 w-4 mr-2" />
                 Logout
               </Button>
@@ -83,7 +83,7 @@ export function PokemonListPage() {
 
         {/* Error State */}
         {error && (
-          <div className="text-center py-8">
+          <div className="text-center py-8" data-testid="error-message">
             <div className="text-destructive mb-4">Failed to load Pokémon</div>
             <Button onClick={() => window.location.reload()}>Try Again</Button>
           </div>
@@ -91,7 +91,7 @@ export function PokemonListPage() {
 
         {/* Empty State */}
         {!isLoading && !error && allPokemon.length === 0 && (
-          <div className="text-center py-12">
+          <div className="text-center py-12" data-testid="no-results">
             <h3 className="text-lg font-medium text-foreground mb-2">No Pokémon Found</h3>
             <p className="text-muted-foreground">
               {searchQuery 
