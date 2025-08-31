@@ -18,6 +18,11 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  base: "/app/",
+  build: {
+    outDir: "../backend/public/app",
+    emptyOutDir: true,
+  },
   server: {
     proxy: {
       '/api': {
