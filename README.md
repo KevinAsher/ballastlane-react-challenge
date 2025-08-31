@@ -27,6 +27,7 @@
 ### Prerequisites
 - Docker and Docker Compose
 - Node.js and pnpm (for frontend development)
+- PHP 8.2+ (for composer first install)
 
 ### Local Development Setup
 
